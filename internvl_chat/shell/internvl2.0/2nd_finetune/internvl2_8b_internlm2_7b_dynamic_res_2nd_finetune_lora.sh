@@ -11,7 +11,10 @@ export MASTER_PORT=34229
 export TF_CPP_MIN_LOG_LEVEL=3
 export LAUNCHER=pytorch
 
-OUTPUT_DIR='work_dirs/internvl_chat_v2_0/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora'
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+
+# OUTPUT_DIR='work_dirs/internvl_chat_v2_0/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora'
+OUTPUT_DIR="work_dirs/internvl_chat_v2_0/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}"
 
 if [ ! -d "$OUTPUT_DIR" ]; then
   mkdir -p "$OUTPUT_DIR"
@@ -29,30 +32,30 @@ torchrun \
   --nproc_per_node=${GPUS} \
   --master_port=${MASTER_PORT} \
   internvl/train/internvl_chat_finetune.py \
-  --model_name_or_path "./pretrained/InternVL2-8B" \
+  --model_name_or_path "/root/.cache/modelscope/hub/OpenGVLab/InternVL2-8B" \
   --conv_style "internlm2-chat" \
   --output_dir ${OUTPUT_DIR} \
-  --meta_path "./shell/data/internvl_1_2_finetune_custom.json" \
+  --meta_path "./shell/data/epsilon.json" \
   --overwrite_output_dir True \
   --force_image_size 448 \
   --max_dynamic_patch 6 \
   --down_sample_ratio 0.5 \
   --drop_path_rate 0.0 \
-  --freeze_llm True \
-  --freeze_mlp True \
-  --freeze_backbone True \
+  --freeze_llm False \
+  --freeze_mlp False \
+  --freeze_backbone False \
   --use_llm_lora 16 \
   --vision_select_layer -1 \
   --dataloader_num_workers 4 \
   --bf16 True \
-  --num_train_epochs 1 \
+  --num_train_epochs 3 \
   --per_device_train_batch_size ${PER_DEVICE_BATCH_SIZE} \
   --gradient_accumulation_steps ${GRADIENT_ACC} \
   --evaluation_strategy "no" \
   --save_strategy "steps" \
-  --save_steps 200 \
-  --save_total_limit 1 \
-  --learning_rate 4e-5 \
+  --save_steps 1000 \
+  --save_total_limit 50 \
+  --learning_rate 1e-7 \
   --weight_decay 0.01 \
   --warmup_ratio 0.03 \
   --lr_scheduler_type "cosine" \

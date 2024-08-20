@@ -1,0 +1,23 @@
+{
+    "mimic2_train_173k": {
+        "root": "",
+        "annotation": "/root/projects/InternVL-Epsi/output/jsonl/train_dataset_converted.jsonl",
+        "data_augment": false,
+        "repeat_time": 1,
+        "length": 173249
+    },
+    "mimic2_test_2k": {
+        "root": "",
+        "annotation": "/root/projects/InternVL-Epsi/output/jsonl/test_dataset_converted.jsonl",
+        "data_augment": false,
+        "repeat_time": 1,
+        "length": 2559
+    },
+    "mimic2_validation_1k": {
+        "root": "",
+        "annotation": "/root/projects/InternVL-Epsi/output/jsonl/validation_dataset_converted.jsonl",
+        "data_augment": false,
+        "repeat_time": 1,
+        "length": 173249
+    }
+}
