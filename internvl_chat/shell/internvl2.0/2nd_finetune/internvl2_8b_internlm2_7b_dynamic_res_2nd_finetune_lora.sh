@@ -12,9 +12,12 @@ export TF_CPP_MIN_LOG_LEVEL=3
 export LAUNCHER=pytorch
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+LR=1e-5
 
 # OUTPUT_DIR='work_dirs/internvl_chat_v2_0/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora'
-OUTPUT_DIR="work_dirs/internvl_chat_v2_0/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}"
+# OUTPUT_DIR="work_dirs/internvl_chat_v2_0/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}_no_weaklabel"
+OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}_has_weaklabel"
+
 
 if [ ! -d "$OUTPUT_DIR" ]; then
   mkdir -p "$OUTPUT_DIR"
@@ -35,7 +38,7 @@ torchrun \
   --model_name_or_path "/root/.cache/modelscope/hub/OpenGVLab/InternVL2-8B" \
   --conv_style "internlm2-chat" \
   --output_dir ${OUTPUT_DIR} \
-  --meta_path "./shell/data/epsilon.json" \
+  --meta_path "./shell/data/mimic2_has_weak_label.json" \
   --overwrite_output_dir True \
   --force_image_size 448 \
   --max_dynamic_patch 6 \
@@ -46,7 +49,7 @@ torchrun \
   --freeze_backbone False \
   --use_llm_lora 16 \
   --vision_select_layer -1 \
-  --dataloader_num_workers 4 \
+  --dataloader_num_workers 48 \
   --bf16 True \
   --num_train_epochs 3 \
   --per_device_train_batch_size ${PER_DEVICE_BATCH_SIZE} \
@@ -55,7 +58,7 @@ torchrun \
   --save_strategy "steps" \
   --save_steps 1000 \
   --save_total_limit 50 \
-  --learning_rate 1e-7 \
+  --learning_rate ${LR} \
   --weight_decay 0.01 \
   --warmup_ratio 0.03 \
   --lr_scheduler_type "cosine" \
