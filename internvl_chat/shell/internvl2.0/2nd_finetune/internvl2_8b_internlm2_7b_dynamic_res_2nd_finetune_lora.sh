@@ -12,11 +12,12 @@ export TF_CPP_MIN_LOG_LEVEL=3
 export LAUNCHER=pytorch
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-LR=1e-5
+LR=5e-5
 
 # OUTPUT_DIR='work_dirs/internvl_chat_v2_0/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora'
 # OUTPUT_DIR="work_dirs/internvl_chat_v2_0/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}_no_weaklabel"
-OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}_has_weaklabel"
+# OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}_has_weaklabel"
+OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}_has_corrected_label"
 
 
 if [ ! -d "$OUTPUT_DIR" ]; then
@@ -35,10 +36,10 @@ torchrun \
   --nproc_per_node=${GPUS} \
   --master_port=${MASTER_PORT} \
   internvl/train/internvl_chat_finetune.py \
-  --model_name_or_path "/root/.cache/modelscope/hub/OpenGVLab/InternVL2-8B" \
+  --model_name_or_path "./pretrained/InternVL2-8B" \
   --conv_style "internlm2-chat" \
   --output_dir ${OUTPUT_DIR} \
-  --meta_path "./shell/data/mimic2_has_weak_label.json" \
+  --meta_path "./shell/data/mimic2_has_corrected_label.json" \
   --overwrite_output_dir True \
   --force_image_size 448 \
   --max_dynamic_patch 6 \
