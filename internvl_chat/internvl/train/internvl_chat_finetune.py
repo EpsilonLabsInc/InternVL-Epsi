@@ -33,7 +33,7 @@ from internvl.train.dataset import (ConcatDataset, TCSLoader,
                                     WeightedConcatDataset, build_transform,
                                     dynamic_preprocess, preprocess,
                                     preprocess_internlm, preprocess_mpt,
-                                    preprocess_phi3)
+                                    preprocess_phi3, dcm_2_rgb, get_dcm_from_bucket)
 from internvl.train.trainer_monkey_patch import replace_create_optimizer
 from PIL import Image, ImageFile, PngImagePlugin, UnidentifiedImageError
 from torch.utils.data import Dataset
@@ -315,11 +315,16 @@ class LazySupervisedDataset(Dataset):
         # Load the image using tcs_loader if available, otherwise use PIL
         if self.tcs_loader is not None and 's3://' in image_path:
             return self.tcs_loader(image_path)
+        elif 'dcm' in image_path:
+            dcm_data = get_dcm_from_bucket(image_path)
+            return dcm_2_rgb(dcm_data)
         return Image.open(image_path).convert('RGB')
 
     def get_image_path(self, image_path):
         if image_path.startswith('s3://'):  # for ceph
             image_path = self.root + image_path
+        elif 'dcm' in image_path:
+            image_path = image_path
         else:  # for local image
             image_path = os.path.join(self.root, image_path)
         return image_path

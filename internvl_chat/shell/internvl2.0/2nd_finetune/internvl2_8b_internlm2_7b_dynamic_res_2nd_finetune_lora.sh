@@ -39,7 +39,7 @@ torchrun \
   --model_name_or_path "./pretrained/InternVL2-8B" \
   --conv_style "internlm2-chat" \
   --output_dir ${OUTPUT_DIR} \
-  --meta_path "./shell/data/mimic2_has_corrected_label.json" \
+  --meta_path "./shell/data/gradient_22JUL2024.json" \
   --overwrite_output_dir True \
   --force_image_size 448 \
   --max_dynamic_patch 6 \
@@ -57,8 +57,8 @@ torchrun \
   --gradient_accumulation_steps ${GRADIENT_ACC} \
   --evaluation_strategy "no" \
   --save_strategy "steps" \
-  --save_steps 1000 \
-  --save_total_limit 50 \
+  --save_steps 100000 \
+  --save_total_limit 10 \
   --learning_rate ${LR} \
   --weight_decay 0.01 \
   --warmup_ratio 0.03 \
