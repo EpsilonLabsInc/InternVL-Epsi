@@ -25,7 +25,7 @@ if model.config.use_llm_lora:
     model.config.use_llm_lora = 0
 
 print('Saving model...')
-model.save_pretrained(args.output_path)
+model.save_pretrained(args.output_path, safe_serialization=False)
 print('Saving tokenizer...')
 tokenizer.save_pretrained(args.output_path)
 print('Done!')

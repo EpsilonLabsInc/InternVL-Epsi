@@ -1,7 +1,6 @@
 import json
 import os
 import pickle
-import threading
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -9,6 +8,7 @@ import numpy as np
 import pandas as pd
 from openai import AzureOpenAI
 from tqdm import tqdm
+from time import time
 
 
 def load_cache(cache_file):
@@ -60,10 +60,10 @@ def separate_text_rules(text):
     part1 = "\n".join(part1).strip()
     part2 = "\n".join(part2).strip()
 
-    return {"clinic note": part1, "impressions_and_findings": part2}
+    return {"gpt_clinic_note": part1, "gpt_impressions_and_findings": part2}
 
 
-def separate_text_rules_gpt(
+def separate_text_gpt(
     report, client, model="gpt-4o-mini", max_tokens=1024, temperature=0
 ):  # Low temperature to prioritize accuracy
     """Sends the report content to the Azure OpenAI API to get labels."""
@@ -96,7 +96,7 @@ def separate_text_rules_gpt(
 
 def separate_report(report, client):
     try:
-        parts = separate_text_rules_gpt(report, client)
+        parts = separate_text_gpt(report, client)
     except Exception as e:
         print(f"Error: {e}")
         parts = separate_text_rules(report)
@@ -112,6 +112,7 @@ def read_report(file_path):
 
 def process_report(row, client, cache, cache_file_name):
     report = read_report(row["report"])
+    # report = row["report_text"]
 
     cached_result = cache.get(report)
 
@@ -133,9 +134,9 @@ def process_report(row, client, cache, cache_file_name):
 
 
 def process_report_parallel(df_chunk, cache_file_name, client, pbar=None):
-
+    print(f">>>>>>> loading cache from {cache_file_name}")
     cache = load_cache(cache_file_name)
-    print(f"Loaded cache with {len(cache)} entries from {cache_file_name}")
+    print(f"<<<<<<< loaded cache with {len(cache)} entries from {cache_file_name}")
 
     result = df_chunk.apply(
         lambda row: process_report(row, client, cache, cache_file_name), axis=1
@@ -158,7 +159,9 @@ def parallelize_dataframe(df, func, client, cache_file_name, n_cores=4):
         with ThreadPoolExecutor(max_workers=n_cores) as executor:
             # Submit tasks and pass the progress bar to each
             futures = [
-                executor.submit(func, chunk, f"{cache_file_name}_part{i}.pkl", client, pbar)
+                executor.submit(
+                    func, chunk, f"{cache_file_name}_part{i}.pkl", client, pbar
+                )
                 for i, chunk in enumerate(df_split)
             ]
 
@@ -169,40 +172,65 @@ def parallelize_dataframe(df, func, client, cache_file_name, n_cores=4):
     return pd.concat(results)
 
 
+def get_source_df(source="mimic2"):
+
+    print(f"Loading data from {source}")
+
+    if source == "mimic2":
+        file_path = "/mnt/data/ruian/mimic2_removed_previous_corrected_labels_0830.pkl"
+        df_all = pd.read_pickle(file_path)
+    elif source == "gradient_chest_xr":
+        file_path = (
+            "/mnt/data/ruian/gradient/chext_XR/REPORTS/CR/us-data-cr-23july2024.csv"
+        )
+        df_all = pd.read_csv(
+            file_path,
+            delimiter=",",  # Specify comma as the delimiter
+            quotechar='"',  # Handle quotes around strings properly
+            escapechar="\\",  # Escape special characters
+            na_values="NA",  # Handle 'NA' as missing values
+            skipinitialspace=True,  # Skip any space after the delimiter
+            engine="python",  # Use the Python engine for more flexibility
+        )
+    return df_all
+
+
 if __name__ == "__main__":
     # cache_file = "/mnt/data/ruian/gpt_cache/mimic_report_separation_cache.pkl"
     cache_file_name = "/mnt/data/ruian/gpt_cache/mimic_report_separation_cache"
+    # cache_file_name = "/mnt/data/ruian/gpt_cache/gradient_xr_separation_cache"
 
+    # client = AzureOpenAI(
+    #     azure_endpoint="https://epsilon-eastus.openai.azure.com/openai/deployments/epsilon-mini-4o/chat/completions?api-version=2024-02-15-preview",
+    #     api_key="9b568fdffb144272811cb5fad8b584a0",
+    #     api_version="2024-02-15-preview",
+    # )
 
     client = AzureOpenAI(
         azure_endpoint="https://epsilon-eastus.openai.azure.com/openai/deployments/epsilon-mini-4o/chat/completions?api-version=2024-02-15-preview",
         api_key="9b568fdffb144272811cb5fad8b584a0",
-        api_version="2024-02-15-preview",
+        # api_version="2024-04-01-preview",
+        api_version="2023-03-15-preview"
     )
 
-    # Sample DataFrame
-    # df = pd.DataFrame(
-    #     {
-    #         "report": [
-    #             "/root/projects/local_mnt/mimic2-jpg/mimic-cxr-jpg-2.1.0.physionet.org/reports/p17/p17149055/s53044056.txt",
-    #             "/root/projects/local_mnt/mimic2-jpg/mimic-cxr-jpg-2.1.0.physionet.org/reports/p17/p17149055/s57020980.txt", # example violates content
-    #         ]
-    #     }
-    # )
+    source = "mimic2"
+    # source = "gradient_chest_xr"
 
-    file_path = "/mnt/data/ruian/mimic2_removed_previous_corrected_labels_0830.pkl"
-    df_all = pd.read_pickle(file_path)
+    df_all = get_source_df(source)
 
-    # df_test = df_all.head(4096 * 2)
+    # df_test = df_all.head(256 * 4)
     df_test = df_all
 
     # df[["prompt", "impressions_and_findings"]] = df.apply(process_report, axis=1)
     # print(df.head())
 
     # Process the DataFrame in parallel
+    t0 = time()
     df_results = parallelize_dataframe(
-        df_test, process_report_parallel, client, cache_file_name, n_cores=4
+        df_test, process_report_parallel, client, cache_file_name, n_cores=8
     )
+    t1 = time()
+    print(f"Processing time: {t1 - t0:.2f}s")
 
     # Now `df_results` has the new columns with the extracted information
 
@@ -210,5 +238,5 @@ if __name__ == "__main__":
     print(df_test.head())
 
     df_test.to_pickle(
-        f"/mnt/data/ruian/mimic2_removed_previous_corrected_labels_gpt_separation_0901_{len(df_test)}.pkl"
+        f"/mnt/data/ruian/{source}_removed_previous_corrected_labels_gpt_separation_0901_{len(df_test)}.pkl"
     )
