@@ -182,11 +182,14 @@ def get_dcm_from_bucket(gcp_bucket_path):
 
 def generate_output(dataset_jsonl, model, tokenizer, output_path):
     with open(dataset_jsonl, "r") as file:
+            total_lines = sum(1 for line in file)
+
+    with open(dataset_jsonl, "r") as file:
         results = []
         times = []
 
         # Wrap the loop with tqdm and set total to 100
-        for idx, line in enumerate(tqdm(file, total=100, desc="Processing")):
+        for idx, line in enumerate(tqdm(file, total=total_lines, desc="Processing")):
             # Parse the line as a JSON object
             start_time = time.time()
             entry = json.loads(line)
@@ -226,17 +229,24 @@ def generate_output(dataset_jsonl, model, tokenizer, output_path):
                 print(f"Error: {e}")
                 continue
 
-            result = {"truth": truth_report, "generated": response}
 
-            results.append(result)
+            # result = {"idx": entry["idx"], "truth": truth_report, "generated": response}
+            # results.append(result)
+
+            entry["truth"] = truth_report
+            entry["generated"] = response
+            results.append(entry)
+
             end_time = time.time()
             times.append(end_time - start_time)
 
             # Break the loop after processing 100 entries
-            if len(results) >= 100:
-                with open(output_path, "wb") as f:
-                    pickle.dump(results, f)
-                break
+            # if len(results) >= 100:
+            #     with open(output_path, "wb") as f:
+            #         pickle.dump(results, f)
+            #     break
+        with open(output_path, "wb") as f:
+            pickle.dump(results, f)
 
         avg_time = np.mean(times)
         top_90_time = np.percentile(times, 90)
@@ -258,7 +268,7 @@ if __name__ == "__main__":
 
     description = sys.argv[1]
 
-    output_dir = f"./output/internvl/{description}"
+    output_dir = f"/mnt/data/ruian/internvl2/pkls/{description}"
 
     if os.path.exists(output_dir):
         user_input = input(f"The directory '{output_dir}' already exists. Do you want to continue? (y/n): ").strip().lower()
@@ -313,6 +323,7 @@ if __name__ == "__main__":
             continue
 
         print(f"Loading model from {checkpoint}>>>")
+        print(f"Output will be saved to {output_path}.\n")
 
         model = InternVLChatModel.from_pretrained(
             checkpoint,
@@ -326,7 +337,6 @@ if __name__ == "__main__":
         )
 
         print(f"Generating evaluation output loaded from {checkpoint}.\n")
-
 
         output_dir = os.path.dirname(output_path)
         os.makedirs(output_dir, exist_ok=True)
