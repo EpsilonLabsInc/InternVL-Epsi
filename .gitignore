@@ -176,3 +176,5 @@ internvl_chat/shell/training_notes
 nohup.out
 output/
 # data/
+*pkl
+*txt

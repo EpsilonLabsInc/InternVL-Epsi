@@ -3,19 +3,18 @@ import os
 import pickle
 import sys
 import time
+from io import BytesIO
 
 import numpy as np
+import pydicom
 import torch
 import torchvision.transforms as T
+from google.cloud import storage
 from internvl.model.internvl_chat import InternVLChatModel
 from PIL import Image
 from torchvision.transforms.functional import InterpolationMode
 from tqdm import tqdm
 from transformers import AutoTokenizer
-
-import pydicom
-from google.cloud import storage
-from io import BytesIO
 
 # Display the Python path
 sys.path.append("/root/projects/InternVL-Epsi/internvl_chat")
@@ -102,7 +101,7 @@ def dynamic_preprocess(
 
 
 def dcm_2_rgb(dcm_data, image_path):
-    if hasattr(dcm_data, 'pixel_array'):
+    if hasattr(dcm_data, "pixel_array"):
         pixel_array = dcm_data.pixel_array
     else:
         print("111", image_path)
@@ -110,11 +109,15 @@ def dcm_2_rgb(dcm_data, image_path):
 
     # Normalize the pixel values to the range 0-255
     # The pixel values in a DICOM file may not be in the 0-255 range, so normalization is needed
-    pixel_array_normalized = (pixel_array - np.min(pixel_array)) / (np.max(pixel_array) - np.min(pixel_array)) * 255
+    pixel_array_normalized = (
+        (pixel_array - np.min(pixel_array))
+        / (np.max(pixel_array) - np.min(pixel_array))
+        * 255
+    )
     pixel_array_normalized = pixel_array_normalized.astype(np.uint8)
 
     # Convert grayscale DICOM data to an RGB image by stacking the array 3 times (R, G, B channels)
-    rgb_array = np.stack([pixel_array_normalized]*3, axis=-1)
+    rgb_array = np.stack([pixel_array_normalized] * 3, axis=-1)
 
     # Convert the NumPy array to a PIL Image
     rgb_image = Image.fromarray(rgb_array)
@@ -129,8 +132,9 @@ def dcm_2_rgb(dcm_data, image_path):
 
     return rgb_image
 
+
 def load_image(image_file, input_size=448, max_num=12):
-    if 'dcm' in image_file:
+    if "dcm" in image_file:
         dcm_data = get_dcm_from_bucket(image_file)
         image = dcm_2_rgb(dcm_data, image_file)
     else:
@@ -149,6 +153,8 @@ test_jsonl = "./test_dataset_converted.jsonl"
 test_jsonl = "/mnt/data/ruian/gradient/22JUL2024/dev_test_dataset_corrected_text_5000_test_0916.jsonl"
 test_jsonl = "/mnt/data/ruian/mimic2/gpt/test_dataset_gpt_labels.jsonl"
 test_jsonl = "/mnt/data/ruian/mimic2/gpt/test_dataset_gpt_labels_per_label.jsonl"
+test_jsonl = "/mnt/data/ruian/mimic2/gpt/test_dataset_gpt_labels_sav.jsonl"
+test_jsonl = "/mnt/data/ruian/mimic2/gpt/test_dataset_gpt_labels_per_label_10_sav.jsonl"
 
 
 generation_config = dict(
@@ -159,6 +165,7 @@ generation_config = dict(
     num_beams=2,
     repetition_penalty=1.5,
 )
+
 
 def get_dcm_from_bucket(gcp_bucket_path):
     base = "gs://epsilon-data-us-central1/"
@@ -182,14 +189,17 @@ def get_dcm_from_bucket(gcp_bucket_path):
 
 def generate_output(dataset_jsonl, model, tokenizer, output_path):
     with open(dataset_jsonl, "r") as file:
-            total_lines = sum(1 for line in file)
+        total_lines = sum(1 for line in file)
 
     with open(dataset_jsonl, "r") as file:
         results = []
         times = []
 
         # Wrap the loop with tqdm and set total to 100
-        for idx, line in enumerate(tqdm(file, total=total_lines, desc="Processing")):
+        for _, line in enumerate(tqdm(file, total=total_lines, desc="Processing")):
+
+            print('----------------------------')
+
             # Parse the line as a JSON object
             start_time = time.time()
             entry = json.loads(line)
@@ -227,11 +237,17 @@ def generate_output(dataset_jsonl, model, tokenizer, output_path):
                 )
             except Exception as e:
                 print(f"Error: {e}")
+                print("query:", query)
+                print("truth_report:", truth_report)
                 continue
-
 
             # result = {"idx": entry["idx"], "truth": truth_report, "generated": response}
             # results.append(result)
+
+            print(">>>")
+            print(truth_report)
+            print("<<<")
+            print(response)
 
             entry["truth"] = truth_report
             entry["generated"] = response
@@ -260,8 +276,6 @@ def generate_output(dataset_jsonl, model, tokenizer, output_path):
 
 
 if __name__ == "__main__":
-
-
     if len(sys.argv) < 2:
         print("Usage: python3 -m intern_evaluation.py <description>")
         sys.exit(1)
@@ -271,9 +285,15 @@ if __name__ == "__main__":
     output_dir = f"/mnt/data/ruian/internvl2/pkls/{description}"
 
     if os.path.exists(output_dir):
-        user_input = input(f"The directory '{output_dir}' already exists. Do you want to continue? (y/n): ").strip().lower()
+        user_input = (
+            input(
+                f"The directory '{output_dir}' already exists. Do you want to continue? (y/n): "
+            )
+            .strip()
+            .lower()
+        )
 
-        if user_input != 'y':
+        if user_input != "y":
             print("Exiting the script.")
             sys.exit(1)  # Exit with a status of 1 indicating cancellation by the user
     else:
@@ -281,23 +301,23 @@ if __name__ == "__main__":
         os.makedirs(output_dir)  # Create the directory if it doesn't exist
         print(f"Directory '{output_dir}' created.")
 
-    folder = "/mnt/data/ruian/internvl2/"
-
     # checkpoint_dir = "/mnt/data/ruian/internvl2/has_weak_label_1e-7/"
     # checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240822_064120_1e-6_no_weaklabel/"
     # checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240822_191911_1e-5_no_weaklabel/"
     # checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240823_070315_1e-4_no_weaklabel/"
     # checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240823_165349_1e-4_no_weaklabel"
-    # checkpoint_dir = folder + "internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240824_205017_5e-5_no_weaklabel"
-    checkpoint_dir = folder + "internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240826_170902_1e-4_no_weaklabel"
-    checkpoint_dir = folder + "internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240827_062836_1e-5_has_weaklabel"
-    checkpoint_dir = folder + "internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240828_161003_1e-5_has_weaklabel"
-    checkpoint_dir = folder + "internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240829_171802_1e-4_has_weaklabel"
-    checkpoint_dir = folder + "internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240831_033438_1e-4_has_corrected_label"
-    checkpoint_dir = folder + "internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240901_040154_1e-5_has_corrected_label"
-    checkpoint_dir = folder + "internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240917_195139_1e-5_gradient_chest_XR_no_label"
-    # checkpoint_dir = folder + "internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240902_064729_5e-5_has_corrected_label"
-    checkpoint_dir = folder + "internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241008_210554_1e-5_mimic_gpt"
+    # checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240824_205017_5e-5_no_weaklabel"
+    checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240826_170902_1e-4_no_weaklabel"
+    checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240827_062836_1e-5_has_weaklabel"
+    checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240828_161003_1e-5_has_weaklabel"
+    checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240829_171802_1e-4_has_weaklabel"
+    checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240831_033438_1e-4_has_corrected_label"
+    checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240901_040154_1e-5_has_corrected_label"
+    checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240917_195139_1e-5_gradient_chest_XR_no_label"
+    # checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20240902_064729_5e-5_has_corrected_label"
+    checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241008_210554_1e-5_mimic_gpt"
+    checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241106_101636_1e-5_mimic_gpt_sav"
+    # checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241112_223124_5e-6_mimic_gpt_sav"
 
     checkpoints = sorted(
         [
@@ -312,8 +332,7 @@ if __name__ == "__main__":
 
     # checkpoints = ["OpenGVLab/InternVL2-8B"]
 
-    for checkpoint in checkpoints[-1:]:
-
+    for checkpoint in checkpoints:
         path_prefix = "/".join(checkpoint.split("/")[-1:])
 
         output_path = f"{output_dir}/{path_prefix}.pkl"
@@ -343,6 +362,38 @@ if __name__ == "__main__":
 
         generate_output(test_jsonl, model, tokenizer, output_path)
         print(f"Done for checkpoint {checkpoint}<<<")
+        print(f"pkl file saved to {output_path}.\n")
 
         del model
         torch.cuda.empty_cache()
+
+
+# Directory containing pickle files
+directory_path = output_dir
+
+# Step 1: Get list of pickle file paths
+pickle_files = [os.path.join(directory_path, f) for f in os.listdir(directory_path) if f.endswith('.pkl')]
+
+# Step 2: Extract ids from all pickle files
+all_ids = []
+file_data_map = {}
+
+for file_path in pickle_files:
+    with open(file_path, 'rb') as f:
+        data = pickle.load(f)  # Load the pickle file
+        file_data_map[file_path] = data  # Store the data for reuse
+        ids = {item['id'] for item in data}  # Extract ids as a set
+        all_ids.append(ids)
+
+# Step 3: Find common ids across all pickle files
+common_ids = set.intersection(*all_ids)
+
+
+
+# Step 4: Filter data and save back to original files
+for file_path, data in file_data_map.items():
+    filtered_data = [item for item in data if item['id'] in common_ids]
+    with open(file_path, 'wb') as f:
+        pickle.dump(filtered_data, f)
+
+print(f"Filtering complete. Common ids: {len(common_ids)}")
