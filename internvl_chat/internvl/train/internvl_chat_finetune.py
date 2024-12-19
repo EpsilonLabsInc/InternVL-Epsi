@@ -317,7 +317,7 @@ class LazySupervisedDataset(Dataset):
             return self.tcs_loader(image_path)
         elif 'dcm' in image_path:
             dcm_data = get_dcm_from_bucket(image_path)
-            return dcm_2_rgb(dcm_data)
+            return dcm_2_rgb(dcm_data, image_path)
         return Image.open(image_path).convert('RGB')
 
     def get_image_path(self, image_path):
@@ -388,11 +388,13 @@ class LazySupervisedDataset(Dataset):
 
         images, num_tiles = [], []
         num_image = len(data_item['image'])
-        for image_path in data_item['image']:
+        for image_path in data_item['image'][:4]:
             # Merge the image path
             image_path = self.get_image_path(image_path)
             # Load the image using tcs_loader if available, otherwise use PIL
             image = self.load_image(image_path)
+            if not image:
+                continue
             if self.dynamic_image_size:  # If dynamic image size is enabled, preprocess the image dynamically
                 image = dynamic_preprocess(image, min_num=self.min_dynamic_patch,
                                            max_num=self.max_dynamic_patch // num_image,
@@ -536,13 +538,13 @@ class LazySupervisedDataset(Dataset):
                 if 'image' in data_item:
                     if type(data_item['image']) == list:
                         images = [self.root + item for item in data_item['image']]
-                        print(f'Failed to load image: {images}, the dataset is: {self.ds_name}')
+                        print(f'Failed to load image 1: {images}, the dataset is: {self.ds_name}')
                     else:
                         if data_item['image'].startswith('s3://'):
                             data_path = self.root + data_item['image']
                         else:
                             data_path = os.path.join(self.root, data_item['image'])
-                        print(f'Failed to load image: {data_path}, the dataset is: {self.ds_name}')
+                        print(f'Failed to load image 2: {data_path}, the dataset is: {self.ds_name}')
                 elif 'video' in data_item:
                     data_path = os.path.join(self.root, data_item['video'])
                     print(f'Failed to load video: {data_path}, the dataset is: {self.ds_name}')
@@ -630,6 +632,33 @@ def main():
         handlers=[logging.StreamHandler(sys.stdout)],
     )
 
+    import pytz
+    import socket
+    import wandb
+    from datetime import datetime
+
+    pst_timezone = pytz.timezone("America/Los_Angeles")
+    now_pst = datetime.now(pst_timezone)
+
+    # Format it as "Month-Day-Hour-Min-Year"
+    formatted_time_pst = now_pst.strftime("%m-%d-%H-%M-%Y")
+
+    # Get the server/hostname
+    hostname = socket.gethostname()
+
+    # Combine hostname and date-time into a single string
+    _name = f"{hostname}-{formatted_time_pst}"
+
+    if training_args.local_rank == 0:
+        wandb.init(
+            project="internvl2.5_9b_tile_test",
+            # project="internvl2.5_batchsize_1",
+            name=_name,
+            # track hyperparameters and run metadata
+            # config={"data": "mimic_8192"},
+    )
+
+
     if training_args.should_log:
         # The default of training_args.log_level is passive, so we set log level at info here to have that default.
         transformers.utils.logging.set_verbosity_info()
@@ -651,6 +680,9 @@ def main():
     last_checkpoint = None
     if os.path.isdir(training_args.output_dir) and training_args.do_train and not training_args.overwrite_output_dir:
         last_checkpoint = get_last_checkpoint(training_args.output_dir)
+
+        print(f'last_checkpoint: {last_checkpoint}')
+
         if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:
             raise ValueError(
                 f'Output directory ({training_args.output_dir}) already exists and is not empty. '

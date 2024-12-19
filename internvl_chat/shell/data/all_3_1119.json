@@ -1,0 +1,9 @@
+{
+    "all_3_Nov192024_1290318": {
+      "root": "",
+      "annotation": "/root/projects/InternVL-Epsi/output/jsonl/combined_output_train_1129.jsonl",
+      "data_augment": false,
+      "repeat_time": 1,
+      "length": 1290317
+    }
+  }

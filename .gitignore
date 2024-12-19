@@ -178,3 +178,5 @@ output/
 # data/
 *pkl
 *txt
+
+*wandb

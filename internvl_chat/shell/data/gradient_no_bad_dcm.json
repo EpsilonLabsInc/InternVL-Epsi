@@ -1,0 +1,9 @@
+{
+    "gradient_938k_1212": {
+        "root": "/mnt/data",
+        "annotation": "/root/projects/InternVL-Epsi/output/jsonl/gradient_rm_bad_dcm_1211.jsonl",
+        "data_augment": false,
+        "repeat_time": 1,
+        "length": 938711
+    }
+}

@@ -12,12 +12,16 @@ export TF_CPP_MIN_LOG_LEVEL=3
 export LAUNCHER=pytorch
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-LR=5e-5
+LR=1e-5
 
 # OUTPUT_DIR='work_dirs/internvl_chat_v2_0/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora'
 # OUTPUT_DIR="work_dirs/internvl_chat_v2_0/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}_no_weaklabel"
 # OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}_has_weaklabel"
-OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}_has_corrected_label"
+# OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}_all_3_gpt"
+OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl_finetune_lora_${TIMESTAMP}_${LR}_2.5_mimic2_label"
+OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl_finetune_lora_${TIMESTAMP}_${LR}_2.5_gradient_label_full_rm_sole_no_findings_rm_bad_dcm"
+OUTPUT_DIR="/mnt/data/ruian/internvl2/9b_tiles_experiment"
+
 
 
 if [ ! -d "$OUTPUT_DIR" ]; then
@@ -36,10 +40,10 @@ torchrun \
   --nproc_per_node=${GPUS} \
   --master_port=${MASTER_PORT} \
   internvl/train/internvl_chat_finetune.py \
-  --model_name_or_path "./pretrained/InternVL2-8B" \
+  --model_name_or_path "./pretrained/InternVL2_5-8B/" \
   --conv_style "internlm2-chat" \
   --output_dir ${OUTPUT_DIR} \
-  --meta_path "./shell/data/gradient_22JUL2024.json" \
+  --meta_path "./shell/data/mimic2_1210.json" \
   --overwrite_output_dir True \
   --force_image_size 448 \
   --max_dynamic_patch 6 \
@@ -52,19 +56,19 @@ torchrun \
   --vision_select_layer -1 \
   --dataloader_num_workers 48 \
   --bf16 True \
-  --num_train_epochs 3 \
+  --num_train_epochs 5 \
   --per_device_train_batch_size ${PER_DEVICE_BATCH_SIZE} \
   --gradient_accumulation_steps ${GRADIENT_ACC} \
   --evaluation_strategy "no" \
   --save_strategy "steps" \
-  --save_steps 100000 \
-  --save_total_limit 10 \
+  --save_steps 200 \
+  --save_total_limit 5 \
   --learning_rate ${LR} \
-  --weight_decay 0.01 \
+  --weight_decay 0.001 \
   --warmup_ratio 0.03 \
   --lr_scheduler_type "cosine" \
   --logging_steps 1 \
-  --max_seq_length 4096 \
+  --max_seq_length 8192 \
   --do_train True \
   --grad_checkpoint True \
   --group_by_length True \
@@ -72,5 +76,6 @@ torchrun \
   --use_thumbnail True \
   --ps_version 'v2' \
   --deepspeed "zero_stage1_config.json" \
-  --report_to "tensorboard" \
+  --max_grad_norm 1.0 \
+  --report_to "wandb" \
   2>&1 | tee -a "${OUTPUT_DIR}/training_log.txt"

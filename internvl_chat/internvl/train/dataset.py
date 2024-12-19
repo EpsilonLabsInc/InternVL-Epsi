@@ -35,6 +35,8 @@ except ImportError as E:
     print('petrel_client is not installed. If you read data locally instead of from ceph, ignore it.')
 import sys
 
+import math
+
 
 def get_frame_indices(num_frames, vlen, sample='rand', fix_start=None, input_fps=1, max_num_frames=-1):
     if sample in ['rand', 'middle']: # uniform sampling
@@ -742,8 +744,12 @@ def dynamic_preprocess(image, min_num=1, max_num=6, image_size=448, use_thumbnai
     return processed_images
 
 
-def dcm_2_rgb(dcm_data):
-    pixel_array = dcm_data.pixel_array
+def dcm_2_rgb(dcm_data, image_path):
+    if hasattr(dcm_data, 'pixel_array'):
+        pixel_array = dcm_data.pixel_array
+    else:
+        print("111", image_path)
+    # pixel_array = dcm_data.pixel_array
 
     # Normalize the pixel values to the range 0-255
     # The pixel values in a DICOM file may not be in the 0-255 range, so normalization is needed
@@ -754,14 +760,32 @@ def dcm_2_rgb(dcm_data):
     rgb_array = np.stack([pixel_array_normalized]*3, axis=-1)
 
     # Convert the NumPy array to a PIL Image
-    rgb_image = Image.fromarray(rgb_array)
+    try:
+        rgb_image = Image.fromarray(rgb_array)
+    except:
+        print("333", image_path)
+
+    rows = dcm_data.Rows
+    cols = dcm_data.Columns
+    # 1.6M pixels seems to cause issue of OOM during training
+    while rows * cols > 14000000:
+        # Compress the image by resizing by a factor of 2
+        # rows = rows // 2
+        # cols = cols // 2
+
+        factor = math.sqrt(2)
+        rows = int(rows / factor)
+        cols = int(cols / factor)
+
+        new_size = (cols, rows)
+        rgb_image = rgb_image.resize(new_size, Image.Resampling.LANCZOS)
 
     return rgb_image
 
 
 
-def get_dcm_from_bucket(gcp_bucket_path):
-    base = "gs://epsilon-data-us-central1/"
+def get_dcm_from_bucket(gcp_bucket_path, date="22JUL2024"):
+    base = f"gs://epsilon-data-us-central1/GRADIENT-DATABASE/CR/{date}/"
     gcp_bucket_path = base + gcp_bucket_path
 
     path_parts = gcp_bucket_path.split("/")

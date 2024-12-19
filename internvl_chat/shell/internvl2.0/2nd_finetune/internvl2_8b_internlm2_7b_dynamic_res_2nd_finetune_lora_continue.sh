@@ -2,7 +2,7 @@ set -x
 
 GPUS=${GPUS:-2}
 BATCH_SIZE=${BATCH_SIZE:-16}
-PER_DEVICE_BATCH_SIZE=${PER_DEVICE_BATCH_SIZE:-2}
+PER_DEVICE_BATCH_SIZE=${PER_DEVICE_BATCH_SIZE:-4}
 GRADIENT_ACC=$((BATCH_SIZE / PER_DEVICE_BATCH_SIZE / GPUS))
 
 
@@ -12,19 +12,25 @@ export TF_CPP_MIN_LOG_LEVEL=3
 export LAUNCHER=pytorch
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-
 LR=1e-5
 
+# OUTPUT_DIR='work_dirs/internvl_chat_v2_0/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora'
+# OUTPUT_DIR="work_dirs/internvl_chat_v2_0/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}_no_weaklabel"
+# OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}_has_weaklabel"
+# OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}_gradient_chest_XR_no_label"
 
-OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_26b_internlm2_20b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}"
+OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241001_161623_1e-5_all_3_gpt"
+OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241113_174528_1e-6_mimic_gpt_sav"
+OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241126_075221_1e-5_all_3"
+OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241204_043532_1e-5_all_3_no_label"
 
 if [ ! -d "$OUTPUT_DIR" ]; then
   mkdir -p "$OUTPUT_DIR"
 fi
 
 # number of gpus: 2
-# batch size per gpu: 2
-# gradient accumulation steps: 4
+# batch size per gpu: 4
+# gradient accumulation steps: 2
 # total batch size: 16
 # epoch: 1
 torchrun \
@@ -34,11 +40,11 @@ torchrun \
   --nproc_per_node=${GPUS} \
   --master_port=${MASTER_PORT} \
   internvl/train/internvl_chat_finetune.py \
-  --model_name_or_path "./pretrained/InternVL2_5-26B" \
+  --model_name_or_path "./pretrained/InternVL2-8B" \
   --conv_style "internlm2-chat" \
   --output_dir ${OUTPUT_DIR} \
-  --meta_path "./shell/data/mimic2_1210.json" \
-  --overwrite_output_dir True \
+  --meta_path "./shell/data/all_3_1119_nolabel.json" \
+  --overwrite_output_dir False \
   --force_image_size 448 \
   --max_dynamic_patch 6 \
   --down_sample_ratio 0.5 \
@@ -50,15 +56,15 @@ torchrun \
   --vision_select_layer -1 \
   --dataloader_num_workers 48 \
   --bf16 True \
-  --num_train_epochs 1 \
+  --num_train_epochs 10 \
   --per_device_train_batch_size ${PER_DEVICE_BATCH_SIZE} \
   --gradient_accumulation_steps ${GRADIENT_ACC} \
   --evaluation_strategy "no" \
   --save_strategy "steps" \
-  --save_steps 200 \
+  --save_steps 26881 \
   --save_total_limit 50 \
   --learning_rate ${LR} \
-  --weight_decay 0.05 \
+  --weight_decay 0.001 \
   --warmup_ratio 0.03 \
   --lr_scheduler_type "cosine" \
   --logging_steps 1 \
@@ -69,7 +75,7 @@ torchrun \
   --dynamic_image_size True \
   --use_thumbnail True \
   --ps_version 'v2' \
-  --deepspeed "zero_stage3_config.json" \
+  --deepspeed "zero_stage1_config.json" \
   --max_grad_norm 1.0 \
   --report_to "wandb" \
   2>&1 | tee -a "${OUTPUT_DIR}/training_log.txt"

@@ -1,0 +1,9 @@
+{
+    "mimic2_gpt": {
+      "root": "",
+      "annotation": "/root/projects/InternVL-Epsi/output/jsonl/combined_mimic_train_1210_nolabel.jsonl",
+      "data_augment": false,
+      "repeat_time": 1,
+      "length": 208918
+    }
+  }
