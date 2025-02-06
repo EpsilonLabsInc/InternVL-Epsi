@@ -44,7 +44,7 @@ torchrun \
   --conv_style "internlm2-chat" \
   --output_dir ${OUTPUT_DIR} \
   --meta_path "./shell/data/all_3_1119_nolabel.json" \
-  --overwrite_output_dir False \
+  --overwrite_output_dir True \
   --force_image_size 448 \
   --max_dynamic_patch 6 \
   --down_sample_ratio 0.5 \

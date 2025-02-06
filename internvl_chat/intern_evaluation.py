@@ -9,7 +9,7 @@ import numpy as np
 import pydicom
 import torch
 import torchvision.transforms as T
-from google.cloud import storage
+# from google.cloud import storage
 from internvl.model.internvl_chat import InternVLChatModel
 from PIL import Image
 from torchvision.transforms.functional import InterpolationMode
@@ -135,7 +135,8 @@ def dcm_2_rgb(dcm_data, image_path):
 
 def load_image(image_file, input_size=448, max_num=12):
     if "dcm" in image_file:
-        dcm_data = get_dcm_from_bucket(image_file)
+        # dcm_data = get_dcm_from_bucket(image_file)
+        dcm_data = get_dcm_from_local(image_file)
         image = dcm_2_rgb(dcm_data, image_file)
     else:
         image = Image.open(image_file).convert("RGB")
@@ -155,12 +156,15 @@ test_jsonl = "/mnt/data/ruian/mimic2/gpt/test_dataset_gpt_labels.jsonl"
 test_jsonl = "/mnt/data/ruian/mimic2/gpt/test_dataset_gpt_labels_per_label.jsonl"
 test_jsonl = "/mnt/data/ruian/mimic2/gpt/test_dataset_gpt_labels_sav.jsonl"
 test_jsonl = "/mnt/data/ruian/mimic2/gpt/test_dataset_gpt_labels_per_label_10_sav.jsonl"
+test_jsonl = "/root/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136.jsonl"
+
+test_jsonl = "/root/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136_nolabel_nebius.jsonl"
 
 
 generation_config = dict(
     max_new_tokens=1024,
     do_sample=True,
-    temperature=0.1,
+    temperature=0.5,
     top_k=100,
     num_beams=2,
     repetition_penalty=1.5,
@@ -186,6 +190,15 @@ def get_dcm_from_bucket(gcp_bucket_path):
 
     return dicom_file
 
+def get_dcm_from_local(local_path):
+
+    # prefix = "/root/projects/data/gradient/gradient-cxr/22JUL2024/"
+
+    prefix = ""
+
+    dicom_file = pydicom.dcmread(prefix + local_path)
+
+    return dicom_file
 
 def generate_output(dataset_jsonl, model, tokenizer, output_path):
     with open(dataset_jsonl, "r") as file:
@@ -282,7 +295,7 @@ if __name__ == "__main__":
 
     description = sys.argv[1]
 
-    output_dir = f"/mnt/data/ruian/internvl2/pkls/{description}"
+    output_dir = f"/root/projects/InternVL-Epsi/internvl_chat/test_data/pkls/{description}"
 
     if os.path.exists(output_dir):
         user_input = (
@@ -318,6 +331,8 @@ if __name__ == "__main__":
     checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241008_210554_1e-5_mimic_gpt"
     checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241106_101636_1e-5_mimic_gpt_sav"
     # checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241112_223124_5e-6_mimic_gpt_sav"
+    checkpoint_dir = "/root/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20241221_055656_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_12"
+    checkpoint_dir = "/mnt/gradient_batch123/training/internvl2.5_26b_finetune_lora_20250124_030251_1e-5_all_data/"
 
     checkpoints = sorted(
         [
@@ -346,7 +361,7 @@ if __name__ == "__main__":
 
         model = InternVLChatModel.from_pretrained(
             checkpoint,
-            low_cpu_mem_usage=True,
+            # low_cpu_mem_usage=True,
             torch_dtype=torch.bfloat16,
             device_map="auto",
         ).eval()

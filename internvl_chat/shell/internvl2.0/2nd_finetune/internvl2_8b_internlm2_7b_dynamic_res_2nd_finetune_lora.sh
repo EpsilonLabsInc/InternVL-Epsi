@@ -13,6 +13,11 @@ export LAUNCHER=pytorch
 
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 LR=1e-5
+MAX_DYNAMIC_PATCH=6
+
+prefix="/root/projects/InternVL-Epsi/internvl_chat/training/"
+
+# Combine them to reconstruct the original string
 
 # OUTPUT_DIR='work_dirs/internvl_chat_v2_0/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora'
 # OUTPUT_DIR="work_dirs/internvl_chat_v2_0/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}_no_weaklabel"
@@ -20,8 +25,17 @@ LR=1e-5
 # OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}_all_3_gpt"
 OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl_finetune_lora_${TIMESTAMP}_${LR}_2.5_mimic2_label"
 OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl_finetune_lora_${TIMESTAMP}_${LR}_2.5_gradient_label_full_rm_sole_no_findings_rm_bad_dcm"
-OUTPUT_DIR="/mnt/data/ruian/internvl2/9b_tiles_experiment"
+OUTPUT_DIR="/root/projects/InternVL-Epsi/internvl_chat/training/internvl_finetune_lora_${TIMESTAMP}_${LR}_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_no_label"
 
+this_run="internvl2.5_8b_finetune_lora_${TIMESTAMP}_${LR}_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_${MAX_DYNAMIC_PATCH}"
+this_run="internvl2.5_8b_finetune_lora_${TIMESTAMP}_${LR}_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_${MAX_DYNAMIC_PATCH}_no_labels"
+this_run="internvl2.5_8b_finetune_lora_${TIMESTAMP}_${LR}_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_${MAX_DYNAMIC_PATCH}_hardcases_top_500"
+
+this_run="internvl2.5_8b_finetune_lora_${TIMESTAMP}_${LR}_2.5_gradient_full_rm-no-findings_rm-bad-dcm_tiles_${MAX_DYNAMIC_PATCH}_system_msg_random_synonym"
+
+this_run="mpo-delete"
+
+OUTPUT_DIR="${prefix}${this_run}"
 
 
 if [ ! -d "$OUTPUT_DIR" ]; then
@@ -40,13 +54,13 @@ torchrun \
   --nproc_per_node=${GPUS} \
   --master_port=${MASTER_PORT} \
   internvl/train/internvl_chat_finetune.py \
-  --model_name_or_path "./pretrained/InternVL2_5-8B/" \
+  --model_name_or_path "./pretrained/InternVL2_5-8B-MPO/" \
   --conv_style "internlm2-chat" \
   --output_dir ${OUTPUT_DIR} \
-  --meta_path "./shell/data/mimic2_1210.json" \
+  --meta_path "./shell/data/gradient_no_bad_dcm_no_label_system_msg_random_label.json" \
   --overwrite_output_dir True \
   --force_image_size 448 \
-  --max_dynamic_patch 6 \
+  --max_dynamic_patch ${MAX_DYNAMIC_PATCH} \
   --down_sample_ratio 0.5 \
   --drop_path_rate 0.0 \
   --freeze_llm False \
@@ -60,9 +74,8 @@ torchrun \
   --per_device_train_batch_size ${PER_DEVICE_BATCH_SIZE} \
   --gradient_accumulation_steps ${GRADIENT_ACC} \
   --evaluation_strategy "no" \
-  --save_strategy "steps" \
-  --save_steps 200 \
-  --save_total_limit 5 \
+  --save_strategy "epoch" \
+  --save_total_limit 50 \
   --learning_rate ${LR} \
   --weight_decay 0.001 \
   --warmup_ratio 0.03 \

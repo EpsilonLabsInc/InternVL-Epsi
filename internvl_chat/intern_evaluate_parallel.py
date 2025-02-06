@@ -11,7 +11,7 @@ import pydicom
 import torch
 import torch.distributed as dist
 import torchvision.transforms as T
-from google.cloud import storage
+# from google.cloud import storage
 from internvl.model.internvl_chat import InternVLChatModel
 from PIL import Image
 from torch.nn.parallel import DistributedDataParallel as DDP
@@ -25,7 +25,7 @@ def init_distributed():
     torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
 
 
-sys.path.append("/root/projects/InternVL-Epsi/internvl_chat")
+sys.path.append("/home/ruian/projects/InternVL-Epsi/internvl_chat")
 
 
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
@@ -141,15 +141,25 @@ def dcm_2_rgb(dcm_data, image_path):
     return rgb_image
 
 
+# generation_config = dict(
+#     max_new_tokens=1024,
+#     do_sample=True,
+#     temperature=0.5,
+#     top_k=100,
+#     num_beams=2,
+#     repetition_penalty=1.5,
+# )
+
 generation_config = dict(
     max_new_tokens=1024,
     do_sample=True,
     temperature=0.5,
     top_k=100,
     num_beams=2,
-    repetition_penalty=1.5,
+    repetition_penalty=1.5
 )
 
+print("generation_config: ", generation_config)
 
 def get_dcm_from_bucket(gcp_bucket_path, date="22JUL2024"):
     base = f"gs://epsilon-data-us-central1/GRADIENT-DATABASE/CR/{date}/"
@@ -170,10 +180,19 @@ def get_dcm_from_bucket(gcp_bucket_path, date="22JUL2024"):
 
     return dicom_file
 
+def get_dcm_from_local(local_path):
+
+    # prefix = "/home/ruian/projects/data/gradient/gradient-cxr/22JUL2024/"
+    prefix = ""
+
+    dicom_file = pydicom.dcmread(prefix + local_path)
+
+    return dicom_file
 
 def load_image(image_file, input_size=448, max_num=12):
     if "dcm" in image_file:
-        dcm_data = get_dcm_from_bucket(image_file)
+        # dcm_data = get_dcm_from_bucket(image_file)
+        dcm_data = get_dcm_from_local(image_file)
         image = dcm_2_rgb(dcm_data, image_file)
     else:
         image = Image.open(image_file).convert("RGB")
@@ -247,6 +266,7 @@ def generate_output(lines, model, tokenizer, output_path, rank):
 
         entry["truth"] = truth_report
         entry["generated"] = response
+
         results.append(entry)
 
         end_time = time.time()
@@ -288,19 +308,42 @@ def main():
         print(f"Running inference with {world_size} GPUs...")
 
 
-    test_jsonl = "/mnt/data/ruian/cr_all3/combined_output_test_1129.jsonl" # with labels
+    # test_jsonl = "/mnt/data/ruian/cr_all3/combined_output_test_1129.jsonl" # with labels
     # test_jsonl = "/mnt/data/ruian/cr_all3/combined_output_test_no_label_1122.jsonl" # no labels
+    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136.jsonl"
+    test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136_nolabel_nebius.jsonl"
+    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136_system_msg.jsonl"
+    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136_system_msg_random_synonym.jsonl"
+    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_no_label_01222025_nebius.jsonl"
+    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_no_label_01222025_nebius_filtered.jsonl"
+
 
     checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241120_063721_1e-5_all_3" # with labels
     # checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241122_215434_1e-5_all_3"
     checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241126_075221_1e-5_all_3/old"
+    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20241221_055656_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_12"
+    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20241229_000315_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm"
+
+    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20250105_061340_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_6_labels_hardcases_500"
+    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20241231_182820_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm"
+    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20250107_220852_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_6_hardcases_top_500"
+    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20250108_233246_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_6_system_msg"
+    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_MPO_finetune_lora_20250110_043333_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_6"
+    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20250114_194025_1e-5_2.5_gradient_full_rm-no-findings_rm-bad-dcm_tiles_6_system_msg_random_synonym"
+    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250124_030251_1e-5_all_data"
+    # checkpoint_dir = "/mnt/gradient_batch123/training/internvl2.5_26b_finetune_lora_20250124_030251_1e-5_all_data"
+    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250128_075408_1e-5_all_data/"
+    # checkpoint_dir = "/mnt/gradient_batch123/training/internvl2.5_26b_finetune_lora_20250131_001554_1e-5_all_data/"
+    checkpoint_dir = "/mnt/training/internvl2.5_26b_finetune_lora_20241229_184000_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_no_label"
+    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250205_032537_1e-5_lunglesion"
 
     if len(sys.argv) < 2:
         print("Usage: python3 -m intern_evaluation.py <description>")
         sys.exit(1)
 
     description = sys.argv[1]
-    output_dir = f"/mnt/data/ruian/internvl2/pkls/{description}"
+    # output_dir = f"/mnt/data/ruian/internvl2/pkls/{description}"
+    output_dir = f"/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/{description}"
 
     if not os.path.exists(output_dir):
         # Proceed with creating the directory if needed or continue processing
@@ -312,24 +355,23 @@ def main():
             os.path.join(checkpoint_dir, ckpt)
             for ckpt in os.listdir(checkpoint_dir)
             if ckpt.startswith("checkpoint-")
-        ]
+        ],
+        key=lambda x: int(x.split("-")[-1])
     )
+
+    print(f"Found {len(checkpoints)} checkpoints to evaluate. They are:")
+    print(checkpoints)
 
     for checkpoint in checkpoints:
 
-        if '107524' in checkpoint:
-            continue
-        if '134405' in checkpoint:
-            continue
-        if '295691' in checkpoint:
-            continue
-        if '161286' in checkpoint:
-            continue
-        if '188167' in checkpoint:
-            continue
-
         suffix = checkpoint.split("/")[-1]
         print(f"Loading model from {checkpoint}, with a suffix of {suffix} at rank {rank}")
+
+        output_path = f"{output_dir}/{suffix}/{rank}.pkl"
+
+        if os.path.exists(output_path):
+            print(f"Warning: {output_path} already exists. Skipping...")
+            continue
 
         model = InternVLChatModel.from_pretrained(
             checkpoint,
@@ -337,6 +379,20 @@ def main():
             torch_dtype=torch.bfloat16,
             device_map=None,
         ).to(f"cuda:{rank}")
+
+        # base_model = InternVLChatModel.from_pretrained(
+        #     "./pretrained/InternVL2_5-26B-MPO",  # Path to the original base model (non-LoRA)
+        #     torch_dtype=torch.bfloat16,
+        #     device_map=None)
+
+        # from peft import PeftModel
+
+        # print("loading lora parts")
+        # model = PeftModel.from_pretrained(base_model,
+        #                                   checkpoint,
+        #                                   is_local_files_only=True)
+
+        model.eval()
 
         # print(f"at rank {rank}, model loaded from {checkpoint}")
         # print(f">>>><mode is {model}")
@@ -358,7 +414,6 @@ def main():
 
         os.makedirs(f"{output_dir}/{suffix}", exist_ok=True)
 
-        output_path = f"{output_dir}/{suffix}/{rank}.pkl"
         print(f"saving world-{rank} to {output_path}")
 
         generate_output(local_lines, model, tokenizer, output_path, rank)

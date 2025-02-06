@@ -33,7 +33,7 @@ from internvl.train.dataset import (ConcatDataset, TCSLoader,
                                     WeightedConcatDataset, build_transform,
                                     dynamic_preprocess, preprocess,
                                     preprocess_internlm, preprocess_mpt,
-                                    preprocess_phi3, dcm_2_rgb, get_dcm_from_bucket)
+                                    preprocess_phi3, dcm_2_rgb, get_dcm_from_bucket, get_dcm_from_local, preprocess_internvl2_5)
 from internvl.train.trainer_monkey_patch import replace_create_optimizer
 from PIL import Image, ImageFile, PngImagePlugin, UnidentifiedImageError
 from torch.utils.data import Dataset
@@ -307,6 +307,8 @@ class LazySupervisedDataset(Dataset):
             preprocess_function = preprocess_internlm
         elif self.template_name == 'phi3-chat':
             preprocess_function = preprocess_phi3
+        elif self.template_name == 'internvl2_5':
+            preprocess_function = preprocess_internvl2_5
         else:
             preprocess_function = preprocess
         return preprocess_function
@@ -316,17 +318,19 @@ class LazySupervisedDataset(Dataset):
         if self.tcs_loader is not None and 's3://' in image_path:
             return self.tcs_loader(image_path)
         elif 'dcm' in image_path:
-            dcm_data = get_dcm_from_bucket(image_path)
+            # dcm_data = get_dcm_from_bucket(image_path)
+            dcm_data = get_dcm_from_local(image_path)
+
             return dcm_2_rgb(dcm_data, image_path)
         return Image.open(image_path).convert('RGB')
 
     def get_image_path(self, image_path):
         if image_path.startswith('s3://'):  # for ceph
             image_path = self.root + image_path
-        elif 'dcm' in image_path:
-            image_path = image_path
-        else:  # for local image
-            image_path = os.path.join(self.root, image_path)
+        # elif 'dcm' in image_path:
+        #     image_path = image_path
+        # else:  # for local image
+        #     image_path = os.path.join(self.root, image_path)
         return image_path
 
     def get_transform(self):
@@ -651,7 +655,8 @@ def main():
 
     if training_args.local_rank == 0:
         wandb.init(
-            project="internvl2.5_9b_tile_test",
+            project="mvm-dev-26b-no-label-0204-sixlabels",
+            # project="mvm-dev-all_data-26b-no-label-0130",
             # project="internvl2.5_batchsize_1",
             name=_name,
             # track hyperparameters and run metadata
