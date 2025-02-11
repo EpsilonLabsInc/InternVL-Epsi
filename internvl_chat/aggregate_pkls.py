@@ -93,6 +93,12 @@ if __name__ == "__main__":
     base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_all_on_filter_0202"
     base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_batch1_on_filter_0203"
     base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_lunglesion_on_filter_0203"
+    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_sixlabels_on_filter_0203"
+    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_labels_on_random_laebl_0203"
+    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_labels_on_random_laebl_0203-2"
+    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_labelss_on_no_laebl_0203"
+    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_labelss_on_no_laebl_0203-2"
+    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_labels_gradient_0722"
 
     for subdir in os.listdir(base_dir):
         full_path = os.path.join(base_dir, subdir)

@@ -311,31 +311,39 @@ def main():
     # test_jsonl = "/mnt/data/ruian/cr_all3/combined_output_test_1129.jsonl" # with labels
     # test_jsonl = "/mnt/data/ruian/cr_all3/combined_output_test_no_label_1122.jsonl" # no labels
     # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136.jsonl"
-    test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136_nolabel_nebius.jsonl"
+    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136_nolabel_nebius.jsonl"
     # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136_system_msg.jsonl"
     # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136_system_msg_random_synonym.jsonl"
     # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_no_label_01222025_nebius.jsonl"
-    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_no_label_01222025_nebius_filtered.jsonl"
+    test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_no_label_01222025_nebius_filtered.jsonl"
 
+    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_1129_add_random_label_nebius.jsonl"
+    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_1129_add_random_label_nebius_nolabel.jsonl"
+    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_1129_gradient_only_nebius.jsonl"
 
     checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241120_063721_1e-5_all_3" # with labels
     # checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241122_215434_1e-5_all_3"
     checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241126_075221_1e-5_all_3/old"
-    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20241221_055656_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_12"
     checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20241229_000315_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm"
-
     checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20250105_061340_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_6_labels_hardcases_500"
-    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20241231_182820_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm"
-    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20250107_220852_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_6_hardcases_top_500"
-    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20250108_233246_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_6_system_msg"
-    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_MPO_finetune_lora_20250110_043333_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_6"
-    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20250114_194025_1e-5_2.5_gradient_full_rm-no-findings_rm-bad-dcm_tiles_6_system_msg_random_synonym"
-    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250124_030251_1e-5_all_data"
-    # checkpoint_dir = "/mnt/gradient_batch123/training/internvl2.5_26b_finetune_lora_20250124_030251_1e-5_all_data"
-    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250128_075408_1e-5_all_data/"
-    # checkpoint_dir = "/mnt/gradient_batch123/training/internvl2.5_26b_finetune_lora_20250131_001554_1e-5_all_data/"
-    checkpoint_dir = "/mnt/training/internvl2.5_26b_finetune_lora_20241229_184000_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_no_label"
-    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250205_032537_1e-5_lunglesion"
+
+    checkpoint_dir = "/mnt/training/internvl2.5_26b_finetune_lora_20241231_182820_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm" # 26-11
+    # checkpoint_dir = "/mnt/training/internvl2.5_8b_finetune_lora_20241221_055656_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_12" #26-2
+
+    # # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20250107_220852_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_6_hardcases_top_500"
+    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20250108_233246_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_6_system_msg"
+    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_MPO_finetune_lora_20250110_043333_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_6"
+    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20250114_194025_1e-5_2.5_gradient_full_rm-no-findings_rm-bad-dcm_tiles_6_system_msg_random_synonym"
+    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250124_030251_1e-5_all_data"
+    # # checkpoint_dir = "/mnt/gradient_batch123/training/internvl2.5_26b_finetune_lora_20250124_030251_1e-5_all_data"
+    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250128_075408_1e-5_all_data/"
+    # # checkpoint_dir = "/mnt/gradient_batch123/training/internvl2.5_26b_finetune_lora_20250131_001554_1e-5_all_data/"
+    # checkpoint_dir = "/mnt/training/internvl2.5_26b_finetune_lora_20241229_184000_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_no_label"
+    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250205_032537_1e-5_lunglesion"
+    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250205_224827_1e-5_sixlabels"
+    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250207_060542_1e-5_continue"
+
+    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/shit"
 
     if len(sys.argv) < 2:
         print("Usage: python3 -m intern_evaluation.py <description>")
@@ -363,6 +371,7 @@ def main():
     print(checkpoints)
 
     for checkpoint in checkpoints:
+
 
         suffix = checkpoint.split("/")[-1]
         print(f"Loading model from {checkpoint}, with a suffix of {suffix} at rank {rank}")

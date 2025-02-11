@@ -655,7 +655,7 @@ def main():
 
     if training_args.local_rank == 0:
         wandb.init(
-            project="mvm-dev-26b-no-label-0204-sixlabels",
+            project="mvm-dev-26b-no-label-0204-sixlabels-continue-training",
             # project="mvm-dev-all_data-26b-no-label-0130",
             # project="internvl2.5_batchsize_1",
             name=_name,
@@ -686,6 +686,7 @@ def main():
     if os.path.isdir(training_args.output_dir) and training_args.do_train and not training_args.overwrite_output_dir:
         last_checkpoint = get_last_checkpoint(training_args.output_dir)
 
+        print("#########################################")
         print(f'last_checkpoint: {last_checkpoint}')
 
         if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:
@@ -734,6 +735,9 @@ def main():
         config.max_dynamic_patch = data_args.max_dynamic_patch
         model = InternVLChatModel.from_pretrained(
             model_args.model_name_or_path, torch_dtype=torch.bfloat16, config=config)
+        print(f"merged model now")
+        model.language_model = model.language_model.merge_and_unload()
+        print(model)
     else:
         logger.info('Loading ViT-6B...')
         vision_config = InternVisionConfig.from_pretrained(model_args.vision_path)
