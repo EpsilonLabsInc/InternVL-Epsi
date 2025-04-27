@@ -1,7 +1,7 @@
 set -x
 
-GPUS=${GPUS:-8}
-BATCH_SIZE=${BATCH_SIZE:-64}
+GPUS=${GPUS:-2}
+BATCH_SIZE=${BATCH_SIZE:-32}
 PER_DEVICE_BATCH_SIZE=${PER_DEVICE_BATCH_SIZE:-2}
 GRADIENT_ACC=$((BATCH_SIZE / PER_DEVICE_BATCH_SIZE / GPUS))
 
@@ -19,16 +19,18 @@ prefix="/home/ruian/projects/InternVL-Epsi/internvl_chat/training/"
 
 # OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_26b_internlm2_20b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}"
 
-this_run="internvl2.5_26b_finetune_full_${TIMESTAMP}_${LR}_1labels"
+this_run="internvl2.5_26b_finetune_lora_${TIMESTAMP}_${LR}_all_data"
 OUTPUT_DIR="${prefix}${this_run}"
+
+
 if [ ! -d "$OUTPUT_DIR" ]; then
   mkdir -p "$OUTPUT_DIR"
 fi
 
-# number of gpus: 8
+# number of gpus: 2
 # batch size per gpu: 2
-# gradient accumulation steps: 8
-# total batch size: 128
+# gradient accumulation steps: 4
+# total batch size: 16
 # epoch: 1
 torchrun \
   --nnodes=1 \
@@ -37,18 +39,19 @@ torchrun \
   --nproc_per_node=${GPUS} \
   --master_port=${MASTER_PORT} \
   internvl/train/internvl_chat_finetune.py \
-  --model_name_or_path "./pretrained/InternVL2_5-26B" \
-  --conv_style "internlm2-chat" \
+  --model_name_or_path "./pretrained/InternVL2_5-26B-MPO" \
+  --conv_style "internvl2_5" \
   --output_dir ${OUTPUT_DIR} \
-  --meta_path "./shell/data/gradient_balanced_1label.json" \
+  --meta_path "./shell/data/gradient_mimic_chexpert.json" \
   --overwrite_output_dir True \
   --force_image_size 448 \
   --max_dynamic_patch 6 \
   --down_sample_ratio 0.5 \
-  --drop_path_rate 0.4 \
+  --drop_path_rate 0.0 \
   --freeze_llm False \
   --freeze_mlp False \
   --freeze_backbone False \
+  --use_llm_lora 16 \
   --vision_select_layer -1 \
   --dataloader_num_workers 48 \
   --bf16 True \
@@ -56,9 +59,10 @@ torchrun \
   --per_device_train_batch_size ${PER_DEVICE_BATCH_SIZE} \
   --gradient_accumulation_steps ${GRADIENT_ACC} \
   --evaluation_strategy "no" \
-  --save_strategy "epoch" \
-  --save_total_limit 10 \
-  --learning_rate 1e-5 \
+  --save_strategy "steps" \
+  --save_steps 1000 \
+  --save_total_limit 50 \
+  --learning_rate ${LR} \
   --weight_decay 0.05 \
   --warmup_ratio 0.03 \
   --lr_scheduler_type "cosine" \
@@ -71,5 +75,6 @@ torchrun \
   --use_thumbnail True \
   --ps_version 'v2' \
   --deepspeed "zero_stage3_config.json" \
+  --max_grad_norm 1.0 \
   --report_to "wandb" \
   2>&1 | tee -a "${OUTPUT_DIR}/training_log.txt"

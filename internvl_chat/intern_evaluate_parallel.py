@@ -25,7 +25,7 @@ def init_distributed():
     torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
 
 
-sys.path.append("/home/ruian/projects/InternVL-Epsi/internvl_chat")
+sys.path.append("/home/eric/projects/InternVL-Epsi/internvl_chat")
 
 
 IMAGENET_MEAN = (0.485, 0.456, 0.406)
@@ -182,7 +182,7 @@ def get_dcm_from_bucket(gcp_bucket_path, date="22JUL2024"):
 
 def get_dcm_from_local(local_path):
 
-    # prefix = "/home/ruian/projects/data/gradient/gradient-cxr/22JUL2024/"
+    # prefix = "/home/eric/projects/data/gradient/gradient-cxr/22JUL2024/"
     prefix = ""
 
     dicom_file = pydicom.dcmread(prefix + local_path)
@@ -241,6 +241,8 @@ def generate_output(lines, model, tokenizer, output_path, rank):
             query = query["value"]
             truth_report = truth_report["value"]
 
+            body_parts = entry.get("body_parts", [])
+
             response = model.module.chat(
                 tokenizer,
                 pixel_values,
@@ -248,6 +250,14 @@ def generate_output(lines, model, tokenizer, output_path, rank):
                 generation_config,
                 num_patches_list=num_patches_list,
             )
+
+            # response = model.module.chat(
+            #     tokenizer,
+            #     pixel_values,
+            #     query,
+            #     generation_config,
+            #     num_patches_list=num_patches_list,
+            # )
             # print(f"at rank {rank}, Good!!!!!!!!")
         except Exception as e:
             print(f"Error: {e}")
@@ -266,6 +276,7 @@ def generate_output(lines, model, tokenizer, output_path, rank):
 
         entry["truth"] = truth_report
         entry["generated"] = response
+        entry["body_parts"] = body_parts
 
         results.append(entry)
 
@@ -308,50 +319,35 @@ def main():
         print(f"Running inference with {world_size} GPUs...")
 
 
-    # test_jsonl = "/mnt/data/ruian/cr_all3/combined_output_test_1129.jsonl" # with labels
-    # test_jsonl = "/mnt/data/ruian/cr_all3/combined_output_test_no_label_1122.jsonl" # no labels
-    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136.jsonl"
-    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136_nolabel_nebius.jsonl"
-    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136_system_msg.jsonl"
-    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136_system_msg_random_synonym.jsonl"
-    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_no_label_01222025_nebius.jsonl"
-    test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_no_label_01222025_nebius_filtered.jsonl"
+    # test_jsonl = "/mnt/data/eric/cr_all3/combined_output_test_1129.jsonl" # with labels
+    # test_jsonl = "/mnt/data/eric/cr_all3/combined_output_test_no_label_1122.jsonl" # no labels
+    # test_jsonl = "/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136.jsonl"
+    # test_jsonl = "/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136_nolabel_nebius.jsonl"
+    # test_jsonl = "/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136_system_msg.jsonl"
+    # test_jsonl = "/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/11192024_test_selected_136_system_msg_random_synonym.jsonl"
+    # test_jsonl = "/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_no_label_01222025_nebius.jsonl"
+    # test_jsonl = "/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_no_label_01222025_nebius_filtered.jsonl"
+    test_jsonl = "/home/eric/projects/InternVL-Epsi/output/jsonl/mimic2/03202025_atmost2images_no_label_test.jsonl"
+    test_jsonl = "/home/eric/projects/InternVL-Epsi/output/jsonl/other_parts/0403_test.jsonl"
 
-    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_1129_add_random_label_nebius.jsonl"
-    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_1129_add_random_label_nebius_nolabel.jsonl"
-    # test_jsonl = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_1129_gradient_only_nebius.jsonl"
+    # test_jsonl = "/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_1129_add_random_label_nebius.jsonl"
+    # test_jsonl = "/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_1129_add_random_label_nebius_nolabel.jsonl"
+    # test_jsonl = "/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/combined_output_test_1129_gradient_only_nebius.jsonl"
 
-    checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241120_063721_1e-5_all_3" # with labels
-    # checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241122_215434_1e-5_all_3"
-    checkpoint_dir = "/mnt/data/ruian/internvl2/internvl2_8b_internlm2_7b_dynamic_res_2nd_finetune_lora_20241126_075221_1e-5_all_3/old"
-    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20241229_000315_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm"
-    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20250105_061340_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_6_labels_hardcases_500"
-
-    checkpoint_dir = "/mnt/training/internvl2.5_26b_finetune_lora_20241231_182820_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm" # 26-11
-    # checkpoint_dir = "/mnt/training/internvl2.5_8b_finetune_lora_20241221_055656_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_12" #26-2
-
-    # # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20250107_220852_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_6_hardcases_top_500"
-    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20250108_233246_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_6_system_msg"
-    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_MPO_finetune_lora_20250110_043333_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_tiles_6"
-    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_8b_finetune_lora_20250114_194025_1e-5_2.5_gradient_full_rm-no-findings_rm-bad-dcm_tiles_6_system_msg_random_synonym"
-    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250124_030251_1e-5_all_data"
-    # # checkpoint_dir = "/mnt/gradient_batch123/training/internvl2.5_26b_finetune_lora_20250124_030251_1e-5_all_data"
-    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250128_075408_1e-5_all_data/"
-    # # checkpoint_dir = "/mnt/gradient_batch123/training/internvl2.5_26b_finetune_lora_20250131_001554_1e-5_all_data/"
-    # checkpoint_dir = "/mnt/training/internvl2.5_26b_finetune_lora_20241229_184000_1e-5_2.5_gradient_full_rm_sole_no_findings_rm_bad_dcm_no_label"
-    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250205_032537_1e-5_lunglesion"
-    # checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250205_224827_1e-5_sixlabels"
-    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/internvl2.5_26b_finetune_lora_20250207_060542_1e-5_continue"
-
-    checkpoint_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/training/shit"
+    checkpoint_dir = "/home/eric/projects/InternVL-Epsi/internvl_chat/training/2_5_8b_20250325_041832_1e-5_2.5_mimic2_6_no_labels"
+    checkpoint_dir = "/home/eric/projects/InternVL-Epsi/internvl_chat/training/26b_20250325_184504_1e-5_2.5_mimic2__no_labels"
+    checkpoint_dir = "/home/eric/projects/InternVL-Epsi/internvl_chat/training/chimera_26b-2b_20250328_165337_1e-5_2.5_mimic2_6_no_labels"
+    checkpoint_dir = "/home/eric/projects/InternVL-Epsi/internvl_chat/training/2b_20250401_223001_1e-5_2.5_mimic2_6_no_labels"
+    checkpoint_dir = "/home/eric/projects/InternVL-Epsi/internvl_chat/training/2b_20250404_044538_1e-5_2.5_mimic2_6_no_labels"
+    checkpoint_dir = "/home/eric/projects/InternVL-Epsi/internvl_chat/training/chimera_26b-2b_20250409_035446_1e-5_2.5_other_parts_5images"
 
     if len(sys.argv) < 2:
         print("Usage: python3 -m intern_evaluation.py <description>")
         sys.exit(1)
 
     description = sys.argv[1]
-    # output_dir = f"/mnt/data/ruian/internvl2/pkls/{description}"
-    output_dir = f"/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/{description}"
+    # output_dir = f"/mnt/data/eric/internvl2/pkls/{description}"
+    output_dir = f"/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/pkls/{description}"
 
     if not os.path.exists(output_dir):
         # Proceed with creating the directory if needed or continue processing

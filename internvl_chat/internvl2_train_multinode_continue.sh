@@ -23,7 +23,7 @@ export MASTER_PORT=${MASTER_PORT:-29500}
 # Other training parameters (same as your single-node script)
 ###############################################################################
 GPUS=${GPUS:-8}
-BATCH_SIZE=${BATCH_SIZE:-96}
+BATCH_SIZE=${BATCH_SIZE:-64}
 PER_DEVICE_BATCH_SIZE=${PER_DEVICE_BATCH_SIZE:-4}
 GRADIENT_ACC=$((BATCH_SIZE / PER_DEVICE_BATCH_SIZE / GPUS))  # or adjust as needed
 
@@ -31,7 +31,8 @@ export PYTHONPATH="${PYTHONPATH}:$(pwd)"
 export TF_CPP_MIN_LOG_LEVEL=3
 export LAUNCHER=pytorch
 
-TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+# TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+TIMESTAMP=0212
 
 LR=1e-5
 prefix="/mnt/gradient_batch123/training/"

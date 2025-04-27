@@ -1,7 +1,7 @@
 accelerate==0.33.0
 bitsandbytes==0.41.0
 decord
-deepspeed
+deepspeed==0.15.4
 einops==0.6.1
 einops-exts==0.0.4
 huggingface_hub
@@ -33,3 +33,4 @@ pylibjpeg-libjpeg==2.2.0
 tensorflow==2.17.0
 tf-keras==2.17.0
 pydicom==3.0.1
+# ml_dtypes==0.2.0

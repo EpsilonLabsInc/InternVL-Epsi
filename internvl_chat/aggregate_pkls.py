@@ -6,6 +6,20 @@ import shutil
 from collections import defaultdict
 from tqdm import tqdm
 
+all_labels = ['Support Devices',
+ 'No Findings',
+ 'Cardiomegaly',
+ 'Atelectasis',
+ 'Airspace Opacity',
+ 'Pleural Effusion',
+ 'Edema',
+ 'Pneumonia',
+ 'Fracture',
+ 'Lung Lesion',
+ 'Consolidation',
+ 'Pleural Other',
+ 'Pneumothorax',
+ 'Enlarged Cardiomediastinum']
 
 def aggregate_results_one_folder(world_size, description, output_dir):
     aggregated_results = []
@@ -47,7 +61,10 @@ def aggregate_results(world_size, description, output_dir, base_dir):
             for entry in results:
                 labels = entry.get("labels", [])
 
+
                 for label in labels:
+                    if not label in all_labels:
+                        continue
                     aggregate_results_per_label[label].append(entry)
 
     # Save the final aggregated results
@@ -72,33 +89,21 @@ if __name__ == "__main__":
     world_size = 8
 
     # # for on folder
-    # input_dir = output_dir = "/mnt/data/ruian/internvl2/pkls/no_label/"
-    # input_dir = output_dir = "/mnt/data/ruian/internvl2/pkls/with_label/"
-    # input_dir = output_dir = "/mnt/data/ruian/internvl2/pkls/test/checkpoint-295691/"
+    # input_dir = output_dir = "/mnt/data/eric/internvl2/pkls/no_label/"
+    # input_dir = output_dir = "/mnt/data/eric/internvl2/pkls/with_label/"
+    # input_dir = output_dir = "/mnt/data/eric/internvl2/pkls/test/checkpoint-295691/"
 
     # description = output_dir.split("/")[-2]
     # aggregate_results_one_folder(world_size, description, output_dir)
 
     # for nested folders
-    base_dir = "/mnt/data/ruian/internvl2/pkls/test"
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/9b_12tiles_label"
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_6tiles_label"
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_6tiles_no_label"
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/9b_6titles_label_hardcases"
-    # base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/9b_6titles_label_hardcases_fewer"
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/9b_mpo"
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/all_on_136_ckpt1_1/"
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/all_on_136_0202"
-
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_all_on_filter_0202"
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_batch1_on_filter_0203"
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_lunglesion_on_filter_0203"
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_sixlabels_on_filter_0203"
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_labels_on_random_laebl_0203"
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_labels_on_random_laebl_0203-2"
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_labelss_on_no_laebl_0203"
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_labelss_on_no_laebl_0203-2"
-    base_dir = "/home/ruian/projects/InternVL-Epsi/internvl_chat/test_data/pkls/26b_labels_gradient_0722"
+    base_dir = "/mnt/data/eric/internvl2/pkls/test"
+    base_dir = "/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/pkls/chimera_13b_mimic"
+    base_dir = "/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/pkls/2.5_8b_mimic"
+    base_dir = "/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/pkls/chimera_mimic_balanced"
+    base_dir = "/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/pkls/2b_other_parts"
+    base_dir = "/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/pkls/2b_other_parts_4images"
+    # base_dir = "/home/eric/projects/InternVL-Epsi/internvl_chat/test_data/pkls/2b_other_parts_4images_2"
 
     for subdir in os.listdir(base_dir):
         full_path = os.path.join(base_dir, subdir)

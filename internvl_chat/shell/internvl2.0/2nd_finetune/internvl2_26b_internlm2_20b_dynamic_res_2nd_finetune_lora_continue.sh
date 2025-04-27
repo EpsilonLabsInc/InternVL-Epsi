@@ -1,7 +1,7 @@
 set -x
 
 GPUS=${GPUS:-2}
-BATCH_SIZE=${BATCH_SIZE:-96}
+BATCH_SIZE=${BATCH_SIZE:-64}
 PER_DEVICE_BATCH_SIZE=${PER_DEVICE_BATCH_SIZE:-2}
 GRADIENT_ACC=$((BATCH_SIZE / PER_DEVICE_BATCH_SIZE / GPUS))
 
@@ -21,7 +21,9 @@ prefix="/mnt/training/"
 # OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_26b_internlm2_20b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}"
 
 this_run="internvl2.5_26b_finetune_lora_${TIMESTAMP}_${LR}_all_data"
-this_run="shit"
+this_run="internvl2.5_26b_finetune_lora_${TIMESTAMP}_${LR}_1labels-vlm2class"
+this_run="internvl2.5_26b_finetune_lora_${TIMESTAMP}_${LR}_1labels-vlm2class"
+
 OUTPUT_DIR="${prefix}${this_run}"
 
 
@@ -44,7 +46,7 @@ torchrun \
   --model_name_or_path "/mnt/gradient_batch123/training/internvl2.5_26b_all_data_base/checkpoint-23637/" \
   --conv_style "internlm2-chat" \
   --output_dir ${OUTPUT_DIR} \
-  --meta_path "./shell/data/gradient_mimic_chexpert_sixlabels.json" \
+  --meta_path "./shell/data/gradient_balanced_1label_vlm2class.json" \
   --overwrite_output_dir True \
   --force_image_size 448 \
   --max_dynamic_patch 6 \

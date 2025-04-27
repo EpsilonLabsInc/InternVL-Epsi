@@ -72,6 +72,18 @@ os.environ['TOKENIZERS_PARALLELISM'] = 'true'
 
 
 @dataclass
+class WandbArguments:
+    wandb_project: str = field(
+        default="mvm-dev",
+        metadata={"help": "WandB project name."}
+    )
+    wandb_run_name: str = field(
+        default="",
+        metadata={"help": "WandB run name. If empty, a default name will be generated."}
+    )
+
+
+@dataclass
 class ModelArguments:
     """
     Arguments for specifying model, tokenizer, and configurations.
@@ -392,7 +404,7 @@ class LazySupervisedDataset(Dataset):
 
         images, num_tiles = [], []
         num_image = len(data_item['image'])
-        for image_path in data_item['image'][:4]:
+        for image_path in data_item['image']:
             # Merge the image path
             image_path = self.get_image_path(image_path)
             # Load the image using tcs_loader if available, otherwise use PIL
@@ -617,13 +629,16 @@ def main():
     # If use DeepSpeed zero3, init_dist must before HfArgumentParser
     launcher = os.environ.get('LAUNCHER', 'slurm')
     init_dist(launcher=launcher, backend='nccl')
-    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
+    # parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
+    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments, WandbArguments))
+
     if len(sys.argv) == 2 and sys.argv[1].endswith('.json'):
         # If we pass only one argument to the script, and it's the path to a json file,
         # let's parse it to get our arguments.
-        model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+        model_args, data_args, training_args, wandb_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
     else:
-        model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+        # model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+        model_args, data_args, training_args, wandb_args = parser.parse_args_into_dataclasses()
 
     # Sending telemetry. Tracking the example usage helps us better allocate resources to maintain them. The
     # information sent is the one passed as arguments along with your Python/PyTorch versions.
@@ -653,16 +668,24 @@ def main():
     # Combine hostname and date-time into a single string
     _name = f"{hostname}-{formatted_time_pst}"
 
-    if training_args.local_rank == 0:
-        wandb.init(
-            project="mvm-dev-26b-no-label-0204-sixlabels-continue-training",
-            # project="mvm-dev-all_data-26b-no-label-0130",
-            # project="internvl2.5_batchsize_1",
-            name=_name,
-            # track hyperparameters and run metadata
-            # config={"data": "mimic_8192"},
-    )
+    # if training_args.local_rank == 0:
+    #     wandb.init(
+    #         project="mvm-dev-26b-no-label-0214-balanced-mimic-chex",
+    #         # project="mvm-dev-all_data-26b-no-label-0130",
+    #         # project="internvl2.5_batchsize_1",
+    #         name=_name,
+    #         # name=_name + "_full_parameters",
+    #         # track hyperparameters and run metadata
+    #         # config={"data": "mimic_8192"},
+    # )
 
+    if training_args.local_rank == 0:
+        # Use the provided wandb_run_name if given, otherwise fallback to _name
+        run_name = wandb_args.wandb_run_name if wandb_args.wandb_run_name else _name
+        wandb.init(
+            project=wandb_args.wandb_project,
+            name=run_name,
+        )
 
     if training_args.should_log:
         # The default of training_args.log_level is passive, so we set log level at info here to have that default.
@@ -736,7 +759,14 @@ def main():
         model = InternVLChatModel.from_pretrained(
             model_args.model_name_or_path, torch_dtype=torch.bfloat16, config=config)
         print(f"merged model now")
-        model.language_model = model.language_model.merge_and_unload()
+        # model.language_model = model.language_model.merge_and_unload()
+
+        if hasattr(model.language_model, "merge_and_unload"):
+            print("found lora in checkpoint, merging and unloading")
+            model.language_model = model.language_model.merge_and_unload()
+        else:
+            print("merge_and_unload method not found in language_model. Skipping...")
+
         print(model)
     else:
         logger.info('Loading ViT-6B...')

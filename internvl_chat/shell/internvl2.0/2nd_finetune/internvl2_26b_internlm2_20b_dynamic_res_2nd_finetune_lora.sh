@@ -1,7 +1,7 @@
 set -x
 
 GPUS=${GPUS:-2}
-BATCH_SIZE=${BATCH_SIZE:-32}
+BATCH_SIZE=${BATCH_SIZE:-64}
 PER_DEVICE_BATCH_SIZE=${PER_DEVICE_BATCH_SIZE:-2}
 GRADIENT_ACC=$((BATCH_SIZE / PER_DEVICE_BATCH_SIZE / GPUS))
 
@@ -15,11 +15,16 @@ TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
 LR=1e-5
 
-prefix="/home/ruian/projects/InternVL-Epsi/internvl_chat/training/"
+prefix="/home/eric/projects/InternVL-Epsi/internvl_chat/training/"
 
 # OUTPUT_DIR="/mnt/data/ruian/internvl2/internvl2_26b_internlm2_20b_dynamic_res_2nd_finetune_lora_${TIMESTAMP}_${LR}"
 
-this_run="internvl2.5_26b_finetune_lora_${TIMESTAMP}_${LR}_sixlabels"
+this_run="internvl2.5_26b_finetune_lora_${TIMESTAMP}_${LR}_1labels-vlm2class"
+this_run="internvl2.5_26b_finetune_lora_${TIMESTAMP}_${LR}_1labels-3k"
+this_run="internvl2.5_26b_finetune_lora_${TIMESTAMP}_${LR}_1labels-10k"
+this_run="internvl2.5_26b_finetune_lora_${TIMESTAMP}_${LR}_1labels-10k-mimic-chex"
+
+this_run="26b_${TIMESTAMP}_${LR}_2.5_mimic2_${MAX_DYNAMIC_PATCH}_no_labels"
 OUTPUT_DIR="${prefix}${this_run}"
 
 
@@ -42,7 +47,7 @@ torchrun \
   --model_name_or_path "./pretrained/InternVL2_5-26B" \
   --conv_style "internlm2-chat" \
   --output_dir ${OUTPUT_DIR} \
-  --meta_path "./shell/data/gradient_mimic_chexpert_sixlabels.json" \
+  --meta_path "./shell/data/mimic2_0320_nolabels.json" \
   --overwrite_output_dir True \
   --force_image_size 448 \
   --max_dynamic_patch 6 \
@@ -76,4 +81,6 @@ torchrun \
   --deepspeed "zero_stage3_config.json" \
   --max_grad_norm 1.0 \
   --report_to "wandb" \
+  --wandb_project "internvl2.5_26b_finetune_lora_mimic2" \
+  --wandb_run_name "${TIMESTAMP}_nolabel" \
   2>&1 | tee -a "${OUTPUT_DIR}/training_log.txt"
